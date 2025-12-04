@@ -114,8 +114,11 @@ val patchGatewayPluginXml by tasks.registering {
 val gatewayArtifacts by configurations.creating {
     isCanBeConsumed = true
     isCanBeResolved = false
-    // share same dependencies as default configuration
-    extendsFrom(configurations["implementation"], configurations["runtimeOnly"])
+}
+
+// Use afterEvaluate to ensure configurations are properly set up before extending
+afterEvaluate {
+    gatewayArtifacts.extendsFrom(configurations["implementation"], configurations["runtimeOnly"])
 }
 
 val gatewayJar = tasks.create<Jar>("gatewayJar") {

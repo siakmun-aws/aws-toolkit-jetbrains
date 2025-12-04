@@ -49,14 +49,15 @@ intellijToolkit {
 }
 
 // expose intellij test framework to fixture consumers
-configurations.testFixturesCompileOnlyApi {
-    extendsFrom(
-        configurations.intellijPlatformTestDependencies.get()
-    )
+// Use afterEvaluate to avoid circular dependency during configuration resolution
+afterEvaluate {
+    configurations.named("testFixturesCompileOnlyApi") {
+        extendsFrom(configurations.named("intellijPlatformTestDependencies").get())
+    }
 }
 
 // intellij java-test-framework pollutes test classpath with extracted java plugins
-configurations.testFixturesApi {
+configurations.named("testFixturesApi") {
     exclude("com.jetbrains.intellij.java", "java")
     exclude("com.jetbrains.intellij.java", "java-impl")
 }

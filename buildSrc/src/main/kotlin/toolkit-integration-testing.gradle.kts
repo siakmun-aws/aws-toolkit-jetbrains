@@ -31,21 +31,24 @@ sourceSets {
     }
 }
 
-configurations.named("integrationTestCompileClasspath").configure {
-    extendsFrom(configurations.getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME))
-    attributes {
-        attribute(Attributes.extracted, true)
-        attribute(Attributes.collected, true)
+// Use afterEvaluate to ensure configurations are properly set up before extending
+afterEvaluate {
+    configurations.named("integrationTestCompileClasspath").configure {
+        extendsFrom(configurations.getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME))
+        attributes {
+            attribute(Attributes.extracted, true)
+            attribute(Attributes.collected, true)
+        }
     }
-}
 
-configurations.named("integrationTestRuntimeClasspath").configure {
-    extendsFrom(configurations.getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
-    attributes {
-        attribute(Attributes.extracted, true)
-        attribute(Attributes.collected, true)
+    configurations.named("integrationTestRuntimeClasspath").configure {
+        extendsFrom(configurations.getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
+        attributes {
+            attribute(Attributes.extracted, true)
+            attribute(Attributes.collected, true)
+        }
+        isCanBeResolved = true
     }
-    isCanBeResolved = true
 }
 
 // Add the integration test source set to test jar
