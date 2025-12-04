@@ -10,6 +10,7 @@ plugins {
     id("toolkit-git-secrets")
     id("toolkit-jacoco-report")
     id("org.jetbrains.gradle.plugin.idea-ext")
+    id("org.jetbrains.intellij.platform.module")
 }
 
 allprojects {
@@ -19,6 +20,11 @@ allprojects {
 //            failOnNonReproducibleResolution()
         }
     }
+}
+
+intellijPlatform {
+    projectName = "aws-toolkit-jetbrains"
+    instrumentCode = false
 }
 
 val generateChangeLog = tasks.register<GenerateGithubChangeLog>("generateChangeLog") {
@@ -31,6 +37,13 @@ tasks.createRelease.configure {
 }
 
 dependencies {
+    intellijPlatform {
+        // Add IntelliJ Platform dependency for Qodana analysis
+        // Use Community Edition matching the project's IDE profile version (2024.3)
+        intellijIdeaCommunity("2024.3")
+        instrumentationTools()
+    }
+    
     aggregateCoverage(project(":plugin-toolkit:intellij-standalone"))
     aggregateCoverage(project(":plugin-core"))
     aggregateCoverage(project(":plugin-amazonq"))
