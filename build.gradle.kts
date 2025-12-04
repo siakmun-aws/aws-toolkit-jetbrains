@@ -3,6 +3,7 @@
 import org.jetbrains.gradle.ext.ProjectSettings
 import org.jetbrains.gradle.ext.TaskTriggersConfig
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 
 plugins {
     id("base")
@@ -10,6 +11,7 @@ plugins {
     id("toolkit-git-secrets")
     id("toolkit-jacoco-report")
     id("org.jetbrains.gradle.plugin.idea-ext")
+    id("org.jetbrains.intellij.platform")
 }
 
 allprojects {
@@ -40,6 +42,12 @@ dependencies {
     }
 
     aggregateCoverage(project(":ui-tests"))
+
+    // IntelliJ Platform dependency required for Qodana analysis
+    intellijPlatform {
+        intellijIdeaCommunity("2024.3")
+        instrumentationTools()
+    }
 }
 
 tasks.register("runIde") {
