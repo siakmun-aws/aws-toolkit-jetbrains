@@ -108,7 +108,8 @@ configurations.register("coverageDataElements") {
     isVisible = false
     isCanBeResolved = false
     isCanBeConsumed = true
-    extendsFrom(configurations.implementation.get())
+    // Remove extendsFrom to prevent circular dependencies with test configurations
+    // extendsFrom(configurations.implementation.get())
     attributes {
         attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
