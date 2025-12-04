@@ -3,6 +3,7 @@
 import org.jetbrains.gradle.ext.ProjectSettings
 import org.jetbrains.gradle.ext.TaskTriggersConfig
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
+import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
     id("base")
@@ -12,6 +13,8 @@ plugins {
     id("org.jetbrains.gradle.plugin.idea-ext")
     id("org.jetbrains.intellij.platform.module")
 }
+
+val ideProfile = IdeVersions.ideProfile(project)
 
 allprojects {
     configurations.configureEach {
@@ -39,8 +42,9 @@ tasks.createRelease.configure {
 dependencies {
     intellijPlatform {
         // Add IntelliJ Platform dependency for Qodana analysis
-        // Use Community Edition matching the project's IDE profile version (2024.3)
-        intellijIdeaCommunity("2024.3")
+        // Use Community Edition matching the project's IDE profile version
+        val version = ideProfile.community.sdkVersion
+        intellijIdeaCommunity(version, !version.contains("SNAPSHOT"))
         instrumentationTools()
     }
     
