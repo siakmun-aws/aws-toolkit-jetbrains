@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import org.jetbrains.gradle.ext.ProjectSettings
 import org.jetbrains.gradle.ext.TaskTriggersConfig
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
+import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
     id("base")
@@ -10,6 +12,7 @@ plugins {
     id("toolkit-git-secrets")
     id("toolkit-jacoco-report")
     id("org.jetbrains.gradle.plugin.idea-ext")
+    id("org.jetbrains.intellij.platform")
 }
 
 allprojects {
@@ -30,6 +33,8 @@ tasks.createRelease.configure {
     releaseVersion.set(providers.gradleProperty("toolkitVersion"))
 }
 
+val ideProfile = IdeVersions.ideProfile(project)
+
 dependencies {
     aggregateCoverage(project(":plugin-toolkit:intellij-standalone"))
     aggregateCoverage(project(":plugin-core"))
@@ -40,6 +45,11 @@ dependencies {
     }
 
     aggregateCoverage(project(":ui-tests"))
+
+    // Required for Qodana analysis - exactly one IntelliJ Platform dependency must be defined
+    intellijPlatform {
+        create(IntelliJPlatformType.IntelliJIdeaCommunity, ideProfile.community.sdkVersion, useInstaller = false)
+    }
 }
 
 tasks.register("runIde") {
