@@ -104,17 +104,27 @@ tasks.jacocoTestReport.configure {
 
 // Share the coverage data to be aggregated for the whole product
 // this can be removed once we're using jvm-test-suites properly
-configurations.register("coverageDataElements") {
+val coverageDataElements by configurations.registering {
     isVisible = false
     isCanBeResolved = false
     isCanBeConsumed = true
-    extendsFrom(configurations.implementation.get())
     attributes {
         attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
         attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named("jacoco-coverage-data"))
     }
-    tasks.withType<Test>().configureEach {
-        outgoing.artifact(extensions.getByType<JacocoTaskExtension>().destinationFile!!)
+}
+
+// Defer extendsFrom to afterEvaluate to avoid triggering configuration resolution
+// during the Kotlin plugin's KotlinDependenciesManagement.allNonProjectDependencies() calls
+// which can cause "Configuration already observed" IllegalStateException
+afterEvaluate {
+    coverageDataElements.configure {
+        extendsFrom(configurations.implementation.get())
     }
+}
+
+// Register test artifacts separately to avoid nested configureEach calls
+tasks.withType<Test>().configureEach {
+    coverageDataElements.get().outgoing.artifact(extensions.getByType<JacocoTaskExtension>().destinationFile!!)
 }

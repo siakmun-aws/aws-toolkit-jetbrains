@@ -52,26 +52,26 @@ sourceSets {
 // org.gradle.internal.resolve.ModuleVersionNotFoundException:
 // Could not find any version that matches com.jetbrains.intellij.platform:test-framework:{strictly [243, 243.21565.192]; prefer 243.21565.192}.
 if (providers.gradleProperty("ideProfileName").get() == "2024.3") {
-    configurations.all {
+    configurations.configureEach {
         // Skip internal Kotlin plugin configurations to avoid circular resolution during
         // KotlinDependenciesManagement.allNonProjectDependencies() calls.
         // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*, etc.
         if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
-            return@all
+            return@configureEach
         }
         // Skip detekt configurations
         if (name.startsWith("detekt")) {
-            return@all
+            return@configureEach
         }
         // Skip IntelliJ platform plugin internal configurations
         if (name.startsWith("intellijPlatform")) {
-            return@all
+            return@configureEach
         }
         // Skip test compilation configurations that may trigger dependency resolution
         if (name.contains("CompilerPluginClasspath") || 
             name.contains("ScriptDef") ||
             name.contains("KotlinDependencies")) {
-            return@all
+            return@configureEach
         }
 
         resolutionStrategy.dependencySubstitution {
@@ -396,7 +396,7 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
     dependsOn(generateModels)
 }
 
-configurations.all {
+configurations.configureEach {
     // Skip internal Kotlin plugin configurations to avoid circular resolution during
     // KotlinDependenciesManagement.allNonProjectDependencies() calls.
     // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*, etc.
@@ -406,7 +406,7 @@ configurations.all {
         name.contains("CompilerPluginClasspath") ||
         name.contains("ScriptDef") ||
         name.contains("KotlinDependencies")) {
-        return@all
+        return@configureEach
     }
 
     // test runner not happy with coroutines, but not clear where it's coming from:
