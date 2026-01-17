@@ -18,6 +18,11 @@ plugins {
 // TODO: https://github.com/gradle/gradle/issues/15383
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
+// Hoist version lookups outside of configureEach/resolutionStrategy to avoid circular dependency
+// during configuration resolution. These are evaluated once at configuration time.
+val kotlinCoroutinesVersion: String = versionCatalog.findVersion("kotlinCoroutines").get().toString()
+val kotlinVersion: String = versionCatalog.findVersion("kotlin").get().toString()
+
 // Add our source sets per IDE profile version (i.e. src-211)
 sourceSets {
     main {
@@ -53,12 +58,12 @@ configurations {
 
         resolutionStrategy.eachDependency {
             if (requested.group == "org.jetbrains.kotlinx" && requested.name.startsWith("kotlinx-coroutines")) {
-                useVersion(versionCatalog.findVersion("kotlinCoroutines").get().toString())
+                useVersion(kotlinCoroutinesVersion)
                 because("resolve kotlinx-coroutines version conflicts in favor of local version catalog")
             }
 
             if (requested.group == "org.jetbrains.kotlin" && requested.name.startsWith("kotlin")) {
-                useVersion(versionCatalog.findVersion("kotlin").get().toString())
+                useVersion(kotlinVersion)
                 because("resolve kotlin version conflicts in favor of local version catalog")
             }
         }
