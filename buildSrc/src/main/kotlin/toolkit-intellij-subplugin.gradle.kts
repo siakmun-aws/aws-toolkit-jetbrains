@@ -46,7 +46,18 @@ configurations {
         // IDE provides netty
         exclude("io.netty")
 
+        // Skip configurations that should not have our custom resolution strategy applied.
+        // This prevents circular dependency resolution issues with the Kotlin Gradle plugin's
+        // internal configurations (e.g., kotlinCompilerPluginClasspath, kotlinScriptDef).
+        // The Kotlin plugin's test dependency capability management iterates over all dependencies
+        // which can trigger resolution during configuration if we're also modifying the configuration.
         if (name.startsWith("detekt")) {
+            return@configureEach
+        }
+
+        // Skip internal Kotlin plugin configurations to avoid circular resolution during
+        // KotlinDependenciesManagement.allNonProjectDependencies() calls
+        if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
             return@configureEach
         }
 

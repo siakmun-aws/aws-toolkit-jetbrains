@@ -32,6 +32,12 @@ dependencies {
 
 allprojects {
     configurations.configureEach {
+        // Skip internal Kotlin plugin configurations to avoid circular resolution during
+        // KotlinDependenciesManagement.allNonProjectDependencies() calls
+        if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
+            return@configureEach
+        }
+
         resolutionStrategy {
             // need to figure out how to fail only on non-platform dependencies
 //            failOnNonReproducibleResolution()
