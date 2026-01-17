@@ -17,19 +17,18 @@ intellijPlatform {
 
 // Eagerly resolve the IDE version at configuration time to ensure the IntelliJ Platform
 // dependency is properly declared for static analysis tools like Qodana.
-// This avoids lazy evaluation issues during project import.
-val ideProfileForModule = IdeVersions.ideProfile(providers)
-val ideVersionForModule: Provider<String> = ideProfileForModule.map { it.community.sdkVersion }
+// Using .get() resolves immediately during configuration phase rather than deferring resolution.
+val ideVersionForModule: String = IdeVersions.ideProfile(providers).get().community.sdkVersion
 
 dependencies {
     intellijPlatform {
-        instrumentationTools()
-
+        // IntelliJ Platform dependency must be declared first before instrumentationTools()
+        // to satisfy the plugin's dependency resolution requirements.
         // Default IntelliJ Platform dependency required by the intellij-platform-gradle-plugin
         // for proper project import and static analysis tools like Qodana.
         // Subprojects may override this with a more specific dependency via create() or similar.
-        // Use eagerly resolved version provider to ensure dependency is available at configuration time.
         intellijIdeaCommunity(ideVersionForModule, useInstaller = false)
+        instrumentationTools()
     }
 }
 

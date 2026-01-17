@@ -20,19 +20,19 @@ intellijPlatform {
     instrumentCode = false
 }
 
-// Eagerly resolve the IDE version to avoid lazy evaluation issues during static analysis import.
-// This must be done at configuration time to ensure the IntelliJ Platform dependency is available
-// for Qodana and other tools that import the project.
-val ideProfileForRoot = IdeVersions.ideProfile(providers)
-val ideVersionForRoot: Provider<String> = ideProfileForRoot.map { it.community.sdkVersion }
+// Eagerly resolve the IDE version at configuration time to ensure the IntelliJ Platform
+// dependency is properly declared for static analysis tools like Qodana.
+// This resolves immediately during the configuration phase rather than deferring resolution.
+val ideVersionForRoot: String = IdeVersions.ideProfile(providers).get().community.sdkVersion
 
 dependencies {
     intellijPlatform {
-        instrumentationTools()
-
-        // Use the eagerly resolved version provider to ensure the dependency is properly
-        // declared during configuration phase for static analysis tools like Qodana.
+        // IntelliJ Platform dependency must be declared first before instrumentationTools()
+        // to satisfy the plugin's dependency resolution requirements.
+        // Using the eagerly resolved version string ensures this dependency is properly
+        // available during project import for Qodana and other static analysis tools.
         intellijIdeaCommunity(ideVersionForRoot, useInstaller = false)
+        instrumentationTools()
     }
 }
 

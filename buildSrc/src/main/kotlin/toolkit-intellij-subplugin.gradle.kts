@@ -127,15 +127,18 @@ intellijPlatform {
 
 dependencies {
     intellijPlatform {
-        instrumentationTools()
-
-        // annoying resolution issue that we don't want to bother fixing
+        // IntelliJ Platform dependency must be declared first before instrumentationTools()
+        // to satisfy the plugin's dependency resolution requirements.
+        // Note: toolkit-intellij-plugin already provides a default IntelliJ Platform dependency,
+        // but subprojects override it here with a project-specific flavor/version via create().
         if (!project.name.contains("jetbrains-gateway")) {
             val type = toolkitIntelliJ.ideFlavor.map { IntelliJPlatformType.fromCode(it.toString()) }
             val version = toolkitIntelliJ.version()
 
             create(type, version, useInstaller = false)
         }
+
+        instrumentationTools()
 
         bundledPlugins(toolkitIntelliJ.productProfile().map { it.bundledPlugins })
         plugins(toolkitIntelliJ.productProfile().map { it.marketplacePlugins })

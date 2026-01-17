@@ -67,6 +67,9 @@ tasks.test {
 
 dependencies {
     intellijPlatform {
+        // IntelliJ Platform dependency must be declared first before instrumentation tools
+        // to satisfy the plugin's dependency resolution requirements for Qodana and other
+        // static analysis tools.
         val type = toolkitIntelliJ.ideFlavor.map { IntelliJPlatformType.fromCode(it.toString()) }
         val version = toolkitIntelliJ.version()
 
