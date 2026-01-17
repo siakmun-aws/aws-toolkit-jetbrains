@@ -35,6 +35,34 @@ sourceSets {
     }
 }
 
+/**
+ * Determines if a configuration should be skipped from custom dependency resolution.
+ * This prevents circular dependency resolution issues with the Kotlin Gradle plugin's
+ * internal configurations. The plugin's KotlinDependenciesManagement.allNonProjectDependencies()
+ * and maybeAddTestDependencyCapability() iterate over all dependencies during configuration,
+ * which can trigger resolution if we're modifying the configuration simultaneously.
+ */
+fun shouldSkipConfiguration(configName: String): Boolean {
+    // Skip detekt configurations
+    if (configName.startsWith("detekt")) {
+        return true
+    }
+
+    // Skip internal Kotlin plugin configurations to avoid circular resolution during
+    // KotlinDependenciesManagement.allNonProjectDependencies() calls.
+    // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*, etc.
+    if (configName.startsWith("kotlin") && !configName.startsWith("kotlinx")) {
+        return true
+    }
+
+    // Skip IntelliJ platform plugin internal configurations
+    if (configName.startsWith("intellijPlatform")) {
+        return true
+    }
+
+    return false
+}
+
 configurations {
     runtimeClasspath {
         // IDE provides Kotlin
@@ -43,23 +71,13 @@ configurations {
     }
 
     configureEach {
+        // Skip configurations that should not have our custom resolution strategy applied.
+        if (shouldSkipConfiguration(name)) {
+            return@configureEach
+        }
+
         // IDE provides netty
         exclude("io.netty")
-
-        // Skip configurations that should not have our custom resolution strategy applied.
-        // This prevents circular dependency resolution issues with the Kotlin Gradle plugin's
-        // internal configurations (e.g., kotlinCompilerPluginClasspath, kotlinScriptDef).
-        // The Kotlin plugin's test dependency capability management iterates over all dependencies
-        // which can trigger resolution during configuration if we're also modifying the configuration.
-        if (name.startsWith("detekt")) {
-            return@configureEach
-        }
-
-        // Skip internal Kotlin plugin configurations to avoid circular resolution during
-        // KotlinDependenciesManagement.allNonProjectDependencies() calls
-        if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
-            return@configureEach
-        }
 
         // Exclude dependencies that ship with iDE
         exclude(group = "org.slf4j")

@@ -53,6 +53,12 @@ sourceSets {
 // Could not find any version that matches com.jetbrains.intellij.platform:test-framework:{strictly [243, 243.21565.192]; prefer 243.21565.192}.
 if (providers.gradleProperty("ideProfileName").get() == "2024.3") {
     configurations.all {
+        // Skip internal Kotlin plugin configurations to avoid circular resolution during
+        // KotlinDependenciesManagement.allNonProjectDependencies() calls
+        if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
+            return@all
+        }
+
         resolutionStrategy.dependencySubstitution {
             listOf(
                 "com.jetbrains.intellij.java:java-test-framework",
@@ -376,7 +382,11 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
 }
 
 configurations.all {
-    if (name.contains("detekt")) {
+    // Skip internal Kotlin plugin configurations to avoid circular resolution during
+    // KotlinDependenciesManagement.allNonProjectDependencies() calls
+    if (name.startsWith("detekt") || 
+        (name.startsWith("kotlin") && !name.startsWith("kotlinx")) ||
+        name.startsWith("intellijPlatform")) {
         return@all
     }
 
