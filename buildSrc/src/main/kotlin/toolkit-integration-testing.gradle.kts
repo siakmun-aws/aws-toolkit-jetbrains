@@ -31,8 +31,22 @@ sourceSets {
     }
 }
 
+// Defer extendsFrom to afterEvaluate to avoid triggering configuration resolution
+// during the Kotlin plugin's KotlinDependenciesManagement.allNonProjectDependencies() calls
+// and maybeAddTestDependencyCapability() which can cause StackOverflowError from circular
+// dependency resolution when initAllDependencies() is called recursively.
+afterEvaluate {
+    configurations.named("integrationTestCompileClasspath").configure {
+        extendsFrom(configurations.getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME))
+    }
+
+    configurations.named("integrationTestRuntimeClasspath").configure {
+        extendsFrom(configurations.getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
+    }
+}
+
+// Set attributes immediately (these don't trigger the circular resolution issue)
 configurations.named("integrationTestCompileClasspath").configure {
-    extendsFrom(configurations.getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME))
     attributes {
         attribute(Attributes.extracted, true)
         attribute(Attributes.collected, true)
@@ -40,7 +54,6 @@ configurations.named("integrationTestCompileClasspath").configure {
 }
 
 configurations.named("integrationTestRuntimeClasspath").configure {
-    extendsFrom(configurations.getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
     attributes {
         attribute(Attributes.extracted, true)
         attribute(Attributes.collected, true)

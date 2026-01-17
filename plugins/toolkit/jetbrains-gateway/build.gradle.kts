@@ -37,8 +37,16 @@ sourceSets {
     }
 }
 
-val gatewayOnlyRuntimeOnly by configurations.getting {
-    extendsFrom(configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME))
+val gatewayOnlyRuntimeOnly by configurations.getting
+
+// Defer extendsFrom to afterEvaluate to avoid triggering configuration resolution
+// during the Kotlin plugin's KotlinDependenciesManagement.allNonProjectDependencies() calls
+// and maybeAddTestDependencyCapability() which can cause StackOverflowError from circular
+// dependency resolution when initAllDependencies() is called recursively.
+afterEvaluate {
+    configurations.named("gatewayOnlyRuntimeOnly").configure {
+        extendsFrom(configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME))
+    }
 }
 
 val gatewayOnlyRuntimeClasspath by configurations.existing
