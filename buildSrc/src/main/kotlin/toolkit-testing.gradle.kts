@@ -108,7 +108,11 @@ configurations.register("coverageDataElements") {
     isVisible = false
     isCanBeResolved = false
     isCanBeConsumed = true
-    extendsFrom(configurations.implementation.get())
+    // Note: Do NOT use extendsFrom(configurations.implementation.get()) here.
+    // It causes StackOverflowError during Kotlin plugin's dependency resolution
+    // when getAllDependencies() recursively traverses configuration inheritance chains.
+    // This configuration only needs to expose JaCoCo coverage data files as artifacts,
+    // it doesn't need to inherit any dependencies.
     attributes {
         attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
