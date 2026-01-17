@@ -18,6 +18,11 @@ plugins {
 // TODO: https://github.com/gradle/gradle/issues/15383
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
+// Hoist version lookups outside of configureEach/resolutionStrategy to avoid circular dependency
+// during configuration resolution. These are evaluated once at configuration time.
+val kotlinCoroutinesVersion: String = versionCatalog.findVersion("kotlinCoroutines").get().toString()
+val kotlinVersion: String = versionCatalog.findVersion("kotlin").get().toString()
+
 // Add our source sets per IDE profile version (i.e. src-211)
 sourceSets {
     main {
@@ -41,7 +46,18 @@ configurations {
         // IDE provides netty
         exclude("io.netty")
 
+        // Skip configurations that should not have our custom resolution strategy applied.
+        // This prevents circular dependency resolution issues with the Kotlin Gradle plugin's
+        // internal configurations (e.g., kotlinCompilerPluginClasspath, kotlinScriptDef).
+        // The Kotlin plugin's test dependency capability management iterates over all dependencies
+        // which can trigger resolution during configuration if we're also modifying the configuration.
         if (name.startsWith("detekt")) {
+            return@configureEach
+        }
+
+        // Skip internal Kotlin plugin configurations to avoid circular resolution during
+        // KotlinDependenciesManagement.allNonProjectDependencies() calls
+        if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
             return@configureEach
         }
 
@@ -53,12 +69,12 @@ configurations {
 
         resolutionStrategy.eachDependency {
             if (requested.group == "org.jetbrains.kotlinx" && requested.name.startsWith("kotlinx-coroutines")) {
-                useVersion(versionCatalog.findVersion("kotlinCoroutines").get().toString())
+                useVersion(kotlinCoroutinesVersion)
                 because("resolve kotlinx-coroutines version conflicts in favor of local version catalog")
             }
 
             if (requested.group == "org.jetbrains.kotlin" && requested.name.startsWith("kotlin")) {
-                useVersion(versionCatalog.findVersion("kotlin").get().toString())
+                useVersion(kotlinVersion)
                 because("resolve kotlin version conflicts in favor of local version catalog")
             }
         }

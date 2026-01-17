@@ -3,6 +3,7 @@
 import org.jetbrains.gradle.ext.ProjectSettings
 import org.jetbrains.gradle.ext.TaskTriggersConfig
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
+import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
     id("base")
@@ -10,10 +11,33 @@ plugins {
     id("toolkit-git-secrets")
     id("toolkit-jacoco-report")
     id("org.jetbrains.gradle.plugin.idea-ext")
+    id("org.jetbrains.intellij.platform.module")
+}
+
+// Required by Qodana and other static analysis tools that need an IntelliJ Platform dependency
+// to be defined at the root project level for proper project import.
+intellijPlatform {
+    instrumentCode = false
+}
+
+dependencies {
+    intellijPlatform {
+        instrumentationTools()
+
+        val ideProfile = IdeVersions.ideProfile(providers)
+        val version = ideProfile.map { it.community.sdkVersion }
+        intellijIdeaCommunity(version, useInstaller = false)
+    }
 }
 
 allprojects {
     configurations.configureEach {
+        // Skip internal Kotlin plugin configurations to avoid circular resolution during
+        // KotlinDependenciesManagement.allNonProjectDependencies() calls
+        if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
+            return@configureEach
+        }
+
         resolutionStrategy {
             // need to figure out how to fail only on non-platform dependencies
 //            failOnNonReproducibleResolution()

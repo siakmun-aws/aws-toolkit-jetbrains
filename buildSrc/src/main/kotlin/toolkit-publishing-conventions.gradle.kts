@@ -48,6 +48,12 @@ intellijPlatform {
 
 configurations {
     configureEach {
+        // Skip internal Kotlin plugin configurations to avoid circular resolution during
+        // KotlinDependenciesManagement.allNonProjectDependencies() calls
+        if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
+            return@configureEach
+        }
+
         // IDE provides netty
         exclude("io.netty")
     }
