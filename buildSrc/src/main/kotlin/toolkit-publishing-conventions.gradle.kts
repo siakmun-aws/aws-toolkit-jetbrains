@@ -46,8 +46,50 @@ intellijPlatform {
     }
 }
 
+/**
+ * Determines if a configuration should be skipped from custom dependency resolution.
+ * This prevents circular dependency resolution issues with the Kotlin Gradle plugin's
+ * internal configurations. The plugin's KotlinDependenciesManagement.allNonProjectDependencies()
+ * and maybeAddTestDependencyCapability() iterate over all dependencies during configuration,
+ * which can trigger resolution if we're modifying the configuration simultaneously.
+ */
+fun shouldSkipConfiguration(configName: String): Boolean {
+    // Skip detekt configurations
+    if (configName.startsWith("detekt")) {
+        return true
+    }
+
+    // Skip internal Kotlin plugin configurations to avoid circular resolution during
+    // KotlinDependenciesManagement.allNonProjectDependencies() calls.
+    // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*,
+    // kotlinCompilerClasspath*, kotlinBuildToolsApiClasspath*, etc.
+    if (configName.startsWith("kotlin") && !configName.startsWith("kotlinx")) {
+        return true
+    }
+
+    // Skip IntelliJ platform plugin internal configurations
+    if (configName.startsWith("intellijPlatform")) {
+        return true
+    }
+
+    // Skip test compilation configurations that may trigger dependency resolution
+    // during KotlinDependenciesManagement internal operations
+    if (configName.contains("CompilerPluginClasspath") || 
+        configName.contains("ScriptDef") ||
+        configName.contains("KotlinDependencies")) {
+        return true
+    }
+
+    return false
+}
+
 configurations {
     configureEach {
+        // Skip configurations that should not have our custom resolution strategy applied.
+        if (shouldSkipConfiguration(name)) {
+            return@configureEach
+        }
+
         // IDE provides netty
         exclude("io.netty")
     }

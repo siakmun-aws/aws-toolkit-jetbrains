@@ -114,8 +114,17 @@ val patchGatewayPluginXml by tasks.registering {
 val gatewayArtifacts by configurations.creating {
     isCanBeConsumed = true
     isCanBeResolved = false
-    // share same dependencies as default configuration
-    extendsFrom(configurations["implementation"], configurations["runtimeOnly"])
+}
+
+// Defer extendsFrom to afterEvaluate to avoid triggering configuration resolution
+// during the Kotlin plugin's KotlinDependenciesManagement.allNonProjectDependencies() calls
+// and maybeAddTestDependencyCapability() which can cause StackOverflowError from circular
+// dependency resolution when initAllDependencies() is called recursively.
+afterEvaluate {
+    configurations.named("gatewayArtifacts").configure {
+        // share same dependencies as default configuration
+        extendsFrom(configurations["implementation"], configurations["runtimeOnly"])
+    }
 }
 
 val gatewayJar = tasks.create<Jar>("gatewayJar") {

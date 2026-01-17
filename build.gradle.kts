@@ -3,6 +3,7 @@
 import org.jetbrains.gradle.ext.ProjectSettings
 import org.jetbrains.gradle.ext.TaskTriggersConfig
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
+import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
     id("base")
@@ -10,10 +11,75 @@ plugins {
     id("toolkit-git-secrets")
     id("toolkit-jacoco-report")
     id("org.jetbrains.gradle.plugin.idea-ext")
+    id("org.jetbrains.intellij.platform.module")
+}
+
+// Required by Qodana and other static analysis tools that need an IntelliJ Platform dependency
+// to be defined at the root project level for proper project import.
+intellijPlatform {
+    instrumentCode = false
+}
+
+// Eagerly resolve the IDE version at configuration time to ensure the IntelliJ Platform
+// dependency is properly declared for static analysis tools like Qodana.
+// This resolves immediately during the configuration phase rather than deferring resolution.
+val ideVersionForRoot: String = IdeVersions.ideProfile(providers).get().community.sdkVersion
+
+dependencies {
+    intellijPlatform {
+        // IntelliJ Platform dependency must be declared first before instrumentationTools()
+        // to satisfy the plugin's dependency resolution requirements.
+        // Using the eagerly resolved version string ensures this dependency is properly
+        // available during project import for Qodana and other static analysis tools.
+        intellijIdeaCommunity(ideVersionForRoot, useInstaller = false)
+        instrumentationTools()
+    }
+}
+
+/**
+ * Determines if a configuration should be skipped from custom dependency resolution.
+ * This prevents circular dependency resolution issues with the Kotlin Gradle plugin's
+ * internal configurations. The plugin's KotlinDependenciesManagement.allNonProjectDependencies()
+ * and maybeAddTestDependencyCapability() iterate over all dependencies during configuration,
+ * which can trigger resolution if we're modifying the configuration simultaneously.
+ */
+fun shouldSkipConfiguration(configName: String): Boolean {
+    // Skip detekt configurations
+    if (configName.startsWith("detekt")) {
+        return true
+    }
+
+    // Skip internal Kotlin plugin configurations to avoid circular resolution during
+    // KotlinDependenciesManagement.allNonProjectDependencies() calls.
+    // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*,
+    // kotlinCompilerClasspath*, kotlinBuildToolsApiClasspath*, etc.
+    if (configName.startsWith("kotlin") && !configName.startsWith("kotlinx")) {
+        return true
+    }
+
+    // Skip IntelliJ platform plugin internal configurations
+    if (configName.startsWith("intellijPlatform")) {
+        return true
+    }
+
+    // Skip test compilation configurations that may trigger dependency resolution
+    // during KotlinDependenciesManagement internal operations
+    if (configName.contains("CompilerPluginClasspath") || 
+        configName.contains("ScriptDef") ||
+        configName.contains("KotlinDependencies")) {
+        return true
+    }
+
+    return false
 }
 
 allprojects {
     configurations.configureEach {
+        // Skip configurations that should not have our custom resolution strategy applied.
+        if (shouldSkipConfiguration(name)) {
+            return@configureEach
+        }
+
         resolutionStrategy {
             // need to figure out how to fail only on non-platform dependencies
 //            failOnNonReproducibleResolution()

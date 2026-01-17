@@ -49,10 +49,15 @@ intellijToolkit {
 }
 
 // expose intellij test framework to fixture consumers
-configurations.testFixturesCompileOnlyApi {
-    extendsFrom(
-        configurations.intellijPlatformTestDependencies.get()
-    )
+// Defer extendsFrom to afterEvaluate to avoid triggering configuration resolution
+// during the Kotlin plugin's KotlinDependenciesManagement.allNonProjectDependencies() calls
+// which can cause "Configuration already observed" IllegalStateException
+afterEvaluate {
+    configurations.testFixturesCompileOnlyApi {
+        extendsFrom(
+            configurations.intellijPlatformTestDependencies.get()
+        )
+    }
 }
 
 // intellij java-test-framework pollutes test classpath with extracted java plugins

@@ -52,7 +52,28 @@ sourceSets {
 // org.gradle.internal.resolve.ModuleVersionNotFoundException:
 // Could not find any version that matches com.jetbrains.intellij.platform:test-framework:{strictly [243, 243.21565.192]; prefer 243.21565.192}.
 if (providers.gradleProperty("ideProfileName").get() == "2024.3") {
-    configurations.all {
+    configurations.configureEach {
+        // Skip internal Kotlin plugin configurations to avoid circular resolution during
+        // KotlinDependenciesManagement.allNonProjectDependencies() calls.
+        // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*, etc.
+        if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
+            return@configureEach
+        }
+        // Skip detekt configurations
+        if (name.startsWith("detekt")) {
+            return@configureEach
+        }
+        // Skip IntelliJ platform plugin internal configurations
+        if (name.startsWith("intellijPlatform")) {
+            return@configureEach
+        }
+        // Skip test compilation configurations that may trigger dependency resolution
+        if (name.contains("CompilerPluginClasspath") || 
+            name.contains("ScriptDef") ||
+            name.contains("KotlinDependencies")) {
+            return@configureEach
+        }
+
         resolutionStrategy.dependencySubstitution {
             listOf(
                 "com.jetbrains.intellij.java:java-test-framework",
@@ -375,9 +396,17 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
     dependsOn(generateModels)
 }
 
-configurations.all {
-    if (name.contains("detekt")) {
-        return@all
+configurations.configureEach {
+    // Skip internal Kotlin plugin configurations to avoid circular resolution during
+    // KotlinDependenciesManagement.allNonProjectDependencies() calls.
+    // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*, etc.
+    if (name.startsWith("detekt") || 
+        (name.startsWith("kotlin") && !name.startsWith("kotlinx")) ||
+        name.startsWith("intellijPlatform") ||
+        name.contains("CompilerPluginClasspath") ||
+        name.contains("ScriptDef") ||
+        name.contains("KotlinDependencies")) {
+        return@configureEach
     }
 
     // test runner not happy with coroutines, but not clear where it's coming from:
