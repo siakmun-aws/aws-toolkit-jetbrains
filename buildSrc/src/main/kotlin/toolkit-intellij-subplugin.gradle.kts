@@ -50,13 +50,22 @@ fun shouldSkipConfiguration(configName: String): Boolean {
 
     // Skip internal Kotlin plugin configurations to avoid circular resolution during
     // KotlinDependenciesManagement.allNonProjectDependencies() calls.
-    // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*, etc.
+    // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*,
+    // kotlinCompilerClasspath*, kotlinBuildToolsApiClasspath*, etc.
     if (configName.startsWith("kotlin") && !configName.startsWith("kotlinx")) {
         return true
     }
 
     // Skip IntelliJ platform plugin internal configurations
     if (configName.startsWith("intellijPlatform")) {
+        return true
+    }
+
+    // Skip test compilation configurations that may trigger dependency resolution
+    // during KotlinDependenciesManagement internal operations
+    if (configName.contains("CompilerPluginClasspath") || 
+        configName.contains("ScriptDef") ||
+        configName.contains("KotlinDependencies")) {
         return true
     }
 

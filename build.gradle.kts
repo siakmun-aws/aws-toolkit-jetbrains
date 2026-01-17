@@ -20,13 +20,19 @@ intellijPlatform {
     instrumentCode = false
 }
 
+// Eagerly resolve the IDE version to avoid lazy evaluation issues during static analysis import.
+// This must be done at configuration time to ensure the IntelliJ Platform dependency is available
+// for Qodana and other tools that import the project.
+val ideProfileForRoot = IdeVersions.ideProfile(providers)
+val ideVersionForRoot: Provider<String> = ideProfileForRoot.map { it.community.sdkVersion }
+
 dependencies {
     intellijPlatform {
         instrumentationTools()
 
-        val ideProfile = IdeVersions.ideProfile(providers)
-        val version = ideProfile.map { it.community.sdkVersion }
-        intellijIdeaCommunity(version, useInstaller = false)
+        // Use the eagerly resolved version provider to ensure the dependency is properly
+        // declared during configuration phase for static analysis tools like Qodana.
+        intellijIdeaCommunity(ideVersionForRoot, useInstaller = false)
     }
 }
 
@@ -45,13 +51,22 @@ fun shouldSkipConfiguration(configName: String): Boolean {
 
     // Skip internal Kotlin plugin configurations to avoid circular resolution during
     // KotlinDependenciesManagement.allNonProjectDependencies() calls.
-    // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*, etc.
+    // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*,
+    // kotlinCompilerClasspath*, kotlinBuildToolsApiClasspath*, etc.
     if (configName.startsWith("kotlin") && !configName.startsWith("kotlinx")) {
         return true
     }
 
     // Skip IntelliJ platform plugin internal configurations
     if (configName.startsWith("intellijPlatform")) {
+        return true
+    }
+
+    // Skip test compilation configurations that may trigger dependency resolution
+    // during KotlinDependenciesManagement internal operations
+    if (configName.contains("CompilerPluginClasspath") || 
+        configName.contains("ScriptDef") ||
+        configName.contains("KotlinDependencies")) {
         return true
     }
 

@@ -54,8 +54,23 @@ sourceSets {
 if (providers.gradleProperty("ideProfileName").get() == "2024.3") {
     configurations.all {
         // Skip internal Kotlin plugin configurations to avoid circular resolution during
-        // KotlinDependenciesManagement.allNonProjectDependencies() calls
+        // KotlinDependenciesManagement.allNonProjectDependencies() calls.
+        // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*, etc.
         if (name.startsWith("kotlin") && !name.startsWith("kotlinx")) {
+            return@all
+        }
+        // Skip detekt configurations
+        if (name.startsWith("detekt")) {
+            return@all
+        }
+        // Skip IntelliJ platform plugin internal configurations
+        if (name.startsWith("intellijPlatform")) {
+            return@all
+        }
+        // Skip test compilation configurations that may trigger dependency resolution
+        if (name.contains("CompilerPluginClasspath") || 
+            name.contains("ScriptDef") ||
+            name.contains("KotlinDependencies")) {
             return@all
         }
 
@@ -383,10 +398,14 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
 
 configurations.all {
     // Skip internal Kotlin plugin configurations to avoid circular resolution during
-    // KotlinDependenciesManagement.allNonProjectDependencies() calls
+    // KotlinDependenciesManagement.allNonProjectDependencies() calls.
+    // These include: kotlinCompilerPluginClasspath*, kotlinScriptDef*, kotlinNative*, etc.
     if (name.startsWith("detekt") || 
         (name.startsWith("kotlin") && !name.startsWith("kotlinx")) ||
-        name.startsWith("intellijPlatform")) {
+        name.startsWith("intellijPlatform") ||
+        name.contains("CompilerPluginClasspath") ||
+        name.contains("ScriptDef") ||
+        name.contains("KotlinDependencies")) {
         return@all
     }
 
