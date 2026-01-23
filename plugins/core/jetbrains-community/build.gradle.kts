@@ -48,12 +48,12 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.IC)
 }
 
-// expose intellij test framework to fixture consumers
-configurations.testFixturesCompileOnlyApi {
-    extendsFrom(
-        configurations.intellijPlatformTestDependencies.get()
-    )
-}
+// Note: We intentionally do NOT use extendsFrom(configurations.intellijPlatformTestDependencies.get()) here
+// as it causes circular dependency issues with Kotlin's test dependency management during configuration phase.
+// This pattern triggers infinite recursion in DefaultConfiguration.initAllDependencies() when the Kotlin plugin's
+// maybeAddTestDependencyCapability() tries to resolve the configuration, leading to StackOverflowError.
+// See: toolkit-testing.gradle.kts for similar documentation about this pattern.
+// Instead, we add the test dependencies explicitly through the intellijPlatform block below.
 
 // intellij java-test-framework pollutes test classpath with extracted java plugins
 configurations.testFixturesApi {

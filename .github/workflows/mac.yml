@@ -16,8 +16,10 @@ jobs:
     runs-on: macos-latest
 
     env:
-      # Increase stack size to prevent StackOverflowError during Gradle dependency resolution
-      GRADLE_OPTS: "-Xss4m"
+      # Increase stack size to prevent StackOverflowError during Gradle dependency resolution.
+      # The Kotlin Gradle plugin's maybeAddTestDependencyCapability() can cause deep recursion
+      # when resolving configurations with complex inheritance patterns.
+      GRADLE_OPTS: "-Xss8m"
 
     steps:
     - uses: actions/checkout@v2
