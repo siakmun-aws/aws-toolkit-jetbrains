@@ -108,7 +108,9 @@ configurations.register("coverageDataElements") {
     isVisible = false
     isCanBeResolved = false
     isCanBeConsumed = true
-    extendsFrom(configurations.implementation.get())
+    // Note: Do not use extendsFrom(configurations.implementation.get()) here as it causes
+    // circular dependency issues with Kotlin's test dependency management during configuration phase.
+    // This configuration is purely for exposing jacoco coverage data artifacts, not for inheriting dependencies.
     attributes {
         attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
